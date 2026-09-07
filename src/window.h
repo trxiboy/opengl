@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "types.h"
+#include "camera.h"
 
 
 class Window {
@@ -17,6 +18,9 @@ public:
     void processInput(Camera& camera);
     void refresh();
     void toggleFullscreen();
+    void centerCursor();
+
+    float getAspect() const;
     
     GLFWwindow* getGLFWwindow() const { return window; }
 

@@ -1,14 +1,19 @@
 #pragma once
 #include <GLFW/glfw3.h>
 #include "types.h"
+#include "camera.h"
+
+#include <vector>
 
 class Overlay {
 public:
-    Overlay();
+    Overlay(GLFWwindow* window);
     ~Overlay();
 
-    void initializeOverlay(GLFWwindow* window);
     void loopStart();
-    void drawUI(Scene& scene, Transform& transform, Camera& camera);
+    void drawUI(Scene& scene, std::vector<Object>& objects, Camera& camera);
     void loopEnd();
+
+private:
+    int selected = 0;
 };

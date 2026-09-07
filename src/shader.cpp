@@ -69,15 +69,31 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath) {
     // ===========================
 }
 
+int Shader::location(const std::string &name) const {
+    auto it = uniformCache.find(name);
+    if (it != uniformCache.end())
+        return it->second;
+
+    int loc = glGetUniformLocation(ID, name.c_str());
+    uniformCache[name] = loc;
+    return loc;
+}
+
 void Shader::use() {
     glUseProgram(ID);
 };
 void Shader::setBool(const std::string &name, bool value) const {
-    glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
+    glUniform1i(location(name), (int)value);
 };
 void Shader::setInt(const std::string &name, int value) const {
-    glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
+    glUniform1i(location(name), value);
 };
 void Shader::setFloat(const std::string &name, float value) const {
-    glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
+    glUniform1f(location(name), value);
+};
+void Shader::setVec3(const std::string &name, const glm::vec3 &value) const {
+    glUniform3fv(location(name), 1, glm::value_ptr(value));
+};
+void Shader::setMat4(const std::string &name, const glm::mat4 &value) const {
+    glUniformMatrix4fv(location(name), 1, GL_FALSE, glm::value_ptr(value));
 };

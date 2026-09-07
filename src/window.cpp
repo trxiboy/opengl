@@ -5,36 +5,23 @@
 #include "imgui_impl_opengl3.h"
 
 bool imguiFocus = false;
+
+static Camera& cameraFor(GLFWwindow* window) {
+    return *(Camera*)glfwGetWindowUserPointer(window);
+}
+
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     if (imguiFocus)
         return;
 
-    Camera& camera = *(Camera*)glfwGetWindowUserPointer(window);
+    cameraFor(window).processMouseMovement((float)xpos, (float)ypos);
+}
 
-    if (camera.firstMouse) {
-        camera.lastX = xpos;
-        camera.lastY = ypos;
-        camera.firstMouse = false;
-    }
+void scrollCallback(GLFWwindow* window, double /*xoffset*/, double yoffset) {
+    if (imguiFocus)
+        return;
 
-    float xoffset = xpos - camera.lastX;
-    float yoffset = camera.lastY - ypos;
-    camera.lastX = xpos;
-    camera.lastY = ypos;
-
-    xoffset *= camera.sensitivity;
-    yoffset *= camera.sensitivity;
-
-    camera.yaw   += xoffset;
-    camera.pitch += yoffset;
-
-    camera.pitch = glm::clamp(camera.pitch, -89.0f, 89.0f);
-
-    glm::vec3 direction;
-    direction.x = cos(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
-    direction.y = sin(glm::radians(camera.pitch));
-    direction.z = sin(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
-    camera.front = glm::normalize(direction);
+    cameraFor(window).processScroll((float)yoffset);
 }
 
 Window::Window(unsigned int width, unsigned int height, Camera* cam)
@@ -62,6 +49,7 @@ bool Window::initialize() {
     
     glfwSetWindowUserPointer(window, camPtr);
     glfwSetCursorPosCallback(window, mouseCallback);
+    glfwSetScrollCallback(window, scrollCallback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
@@ -74,6 +62,13 @@ bool Window::initialize() {
 
     glViewport(0, 0, width, height);
     return true;
+}
+
+float Window::getAspect() const {
+    int w, h;
+    glfwGetFramebufferSize(window, &w, &h);
+    if (h == 0) return 1.0f;   // minimized
+    return (float)w / (float)h;
 }
 
 void Window::processInput(Camera& camera) {
@@ -99,13 +94,7 @@ void Window::processInput(Camera& camera) {
             } else {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-                camPtr->firstMouse = true;
-
-                double cx = width / 2.0;
-                double cy = height / 2.0;
-                glfwSetCursorPos(window, cx, cy);
-                camPtr->lastX = cx;
-                camPtr->lastY = cy;
+                centerCursor();
             }
             tabPressed = true;
         }
@@ -116,29 +105,23 @@ void Window::processInput(Camera& camera) {
     if (imguiFocus)
         return;
 
-    const float cameraSpeed = camera.speed * deltaTime;
-
-    glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
-    glm::vec3 right = glm::normalize(glm::cross(camera.front, worldUp));
-    glm::vec3 up = glm::normalize(glm::cross(right, camera.front));
-
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.position += cameraSpeed * camera.front;
+        camera.processKeyboard(CameraMovement::Forward, deltaTime);
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.position -= cameraSpeed * camera.front;
+        camera.processKeyboard(CameraMovement::Backward, deltaTime);
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.position -= right * cameraSpeed;
+        camera.processKeyboard(CameraMovement::Left, deltaTime);
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera.position += right * cameraSpeed;
+        camera.processKeyboard(CameraMovement::Right, deltaTime);
 
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-        camera.position += up * cameraSpeed;
+        camera.processKeyboard(CameraMovement::Up, deltaTime);
 
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-        camera.position -= up * cameraSpeed;
+        camera.processKeyboard(CameraMovement::Down, deltaTime);
 }
 
 void Window::refresh() {
@@ -179,14 +162,18 @@ void Window::toggleFullscreen() {
             0
         );
     }
-    double cx = width / 2.0;
-    double cy = height / 2.0;
+    centerCursor();
+}
+
+void Window::centerCursor() {
+    int w, h;
+    glfwGetWindowSize(window, &w, &h);
+
+    double cx = w / 2.0;
+    double cy = h / 2.0;
 
     glfwSetCursorPos(window, cx, cy);
-
-    camPtr->firstMouse = true;
-    camPtr->lastX = cx;
-    camPtr->lastY = cy;
+    camPtr->resetMouse((float)cx, (float)cy);
 }
 
 void Window::framebufferSizeCallback(GLFWwindow* /*window*/, int width, int height) {

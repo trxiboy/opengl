@@ -19,6 +19,7 @@
             "${workspaceFolder}/src/shader.cpp",
             "${workspaceFolder}/src/window.cpp",
             "${workspaceFolder}/src/overlay.cpp",
+            "${workspaceFolder}/src/camera.cpp",
             "${workspaceFolder}/src/glad.c",
 
             "${workspaceFolder}/include/imgui/imgui.cpp",
