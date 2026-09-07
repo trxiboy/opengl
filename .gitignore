@@ -1,0 +1,11 @@
+# Build output
+main.exe
+*.exe
+*.o
+*.obj
+
+# Stale build artifacts (imgui is compiled from include/imgui/*.cpp by the build task)
+lib/libimgui.a
+
+# ImGui runtime layout state
+imgui.ini
